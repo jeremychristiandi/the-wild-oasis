@@ -1,0 +1,14 @@
+{
+  "extends": "react-app",
+  // "rules": { "react/prop-types": "off" }
+  "rules": {
+    //var not in use will be yellow instead of red - warn instead error
+    "no-unused-vars": "warn",
+    //will not warn if i didn't pass props
+    "react/prop-types": "off",
+    "react-refresh/only-export-components": [
+      "warn",
+      { "allowConstantExport": true }
+    ]
+  }
+}
