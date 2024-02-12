@@ -1,65 +1,51 @@
+import toast from "react-hot-toast";
 import { useForm } from "react-hook-form";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+
+import { createCabin } from "../../services/apiCabins";
 import Input from "../../ui/Input";
 import Form from "../../ui/Form";
 import Button from "../../ui/Button";
 import FileInput from "../../ui/FileInput";
 import Textarea from "../../ui/Textarea";
 import FormRow from "../../ui/FormRow";
-import useCreateCabin from "./useCreateCabin";
-import useEditCabin from "./useEditCabin";
 
-function CreateCabinForm({ cabinToEdit = {}, onCloseModal }) {
-  const { id: editId, ...editValues } = cabinToEdit;
-  const isEditSession = Boolean(editId);
-
+function CreateCabinForm() {
   // This is a custom hook from react-hook-form
-  const { register, handleSubmit, reset, getValues, formState } = useForm({
-    defaultValues: isEditSession ? editValues : {},
-  });
-  // Custom hooks
-  const { isCreating, createCabin } = useCreateCabin();
-  const { isEditing, editCabin } = useEditCabin();
-
+  const { register, handleSubmit, reset, getValues, formState } = useForm();
   const { errors } = formState;
-  const isLoading = isCreating || isEditing;
+
+  const queryClient = useQueryClient();
+
+  const { mutate, isLoading: isCreating } = useMutation({
+    mutationFn: createCabin,
+    onSuccess: () => {
+      toast.success("New cabin successfully created.");
+      queryClient.invalidateQueries({ queryKey: ["cabins"] });
+      // Reset all form inputs. This comes from useForm hook
+      reset();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
 
   // When the form is submitted, all the input will be taken as data as an arg
   function onSubmit(data) {
-    const image = typeof data.image === "string" ? data.image : data.image[0];
+    mutate({ ...data, image: data.image[0] });
+  }
 
-    isEditSession
-      ? editCabin(
-          { newCabinData: { ...data, image }, id: editId },
-          {
-            onSuccess: () => {
-              // Reset all form inputs. This comes from useForm hook
-              reset();
-              onCloseModal?.();
-            },
-          }
-        )
-      : createCabin(
-          { ...data, image: image },
-          {
-            onSuccess: () => {
-              // Reset all form inputs. This comes from useForm hook
-              reset();
-              onCloseModal?.();
-            },
-          }
-        );
+  function onError(errors) {
+    // console.log(errors);
   }
 
   return (
-    <Form
-      onSubmit={handleSubmit(onSubmit)}
-      type={onCloseModal ? "modal" : "regular"}
-    >
+    <Form onSubmit={handleSubmit(onSubmit, onError)}>
       <FormRow label="Cabin name" error={errors?.name?.message}>
         <Input
           type="text"
           id="name"
-          disabled={isLoading}
+          disabled={isCreating}
           {...register("name", {
             required: "This field is required",
           })}
@@ -70,7 +56,7 @@ function CreateCabinForm({ cabinToEdit = {}, onCloseModal }) {
         <Input
           type="number"
           id="maxCapacity"
-          disabled={isLoading}
+          disabled={isCreating}
           {...register("maxCapacity", {
             required: "This field is required",
             min: {
@@ -85,7 +71,7 @@ function CreateCabinForm({ cabinToEdit = {}, onCloseModal }) {
         <Input
           type="number"
           id="regularPrice"
-          disabled={isLoading}
+          disabled={isCreating}
           {...register("regularPrice", {
             required: "This field is required",
             min: {
@@ -100,7 +86,7 @@ function CreateCabinForm({ cabinToEdit = {}, onCloseModal }) {
         <Input
           type="number"
           id="discount"
-          disabled={isLoading}
+          disabled={isCreating}
           defaultValue={0}
           {...register("discount", {
             required: "This field is required",
@@ -115,7 +101,7 @@ function CreateCabinForm({ cabinToEdit = {}, onCloseModal }) {
         <Textarea
           type="number"
           id="description"
-          disabled={isLoading}
+          disabled={isCreating}
           defaultValue=""
           {...register("description", {
             required: "This field is required",
@@ -127,24 +113,18 @@ function CreateCabinForm({ cabinToEdit = {}, onCloseModal }) {
         <FileInput
           id="image"
           accept="image/*"
-          disabled={isLoading}
+          disabled={isCreating}
           {...register("image", {
-            required: isEditSession ? false : "This field is required",
+            required: "This field is required",
           })}
         />
       </FormRow>
 
       <FormRow>
-        <Button
-          onClick={() => onCloseModal?.()}
-          variation="secondary"
-          type="reset"
-        >
+        <Button variation="secondary" type="reset">
           Cancel
         </Button>
-        <Button disabled={isLoading}>
-          {isEditSession ? "Edit Cabin" : "Add cabin"}
-        </Button>
+        <Button disabled={isCreating}>Add cabin</Button>
       </FormRow>
     </Form>
   );
