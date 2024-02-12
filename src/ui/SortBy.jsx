@@ -9,7 +9,6 @@ export default function SortBy({ options }) {
   const handleChange = (e) => {
     searchParams.set("sortBy", e.target.value);
     setSearchParams(searchParams);
-    console.log("s", searchParams.get("sortBy"));
   };
 
   return (
