@@ -12,6 +12,11 @@ import ButtonText from "../../ui/ButtonText";
 import { useMoveBack } from "../../hooks/useMoveBack";
 import useBooking from "./useBooking";
 import Spinner from "../../ui/Spinner";
+import { HiTrash } from "react-icons/hi2"
+import { useCheckout } from "../check-in-out/useCheckout";
+import Modal from "../../ui/Modal";
+import useDeleteBooking from "./useDeleteBooking";
+import ConfirmDelete from "../../ui/ConfirmDelete";
 
 const HeadingGroup = styled.div`
   display: flex;
@@ -21,12 +26,14 @@ const HeadingGroup = styled.div`
 
 function BookingDetail() {
   const { booking, isLoading } = useBooking()
+  const { checkout, isCheckingOut } = useCheckout()
   const moveBack = useMoveBack();
   const navigate = useNavigate()
+  const { isDeleting, deleteBooking } = useDeleteBooking()
 
-  if (isLoading) return <Spinner />
-
+  if (isLoading || isCheckingOut) return <Spinner />
   const { status, id: bookingId } = booking
+
 
   const statusToTagName = {
     unconfirmed: "blue",
@@ -46,12 +53,26 @@ function BookingDetail() {
 
       <BookingDataBox booking={booking} />
 
-      <ButtonGroup>
-        {status === "unconfirmed" && <Button onClick={() => navigate(`/checkin/${bookingId}`)}>Check in</Button>}
-        <Button variation="secondary" onClick={moveBack}>
-          Back
-        </Button>
-      </ButtonGroup>
+      <Modal>
+        <ButtonGroup>
+          {status === "unconfirmed" && <Button onClick={() => navigate(`/checkin/${bookingId}`)}>Check in</Button>}
+          {status === "checked-in" && <Button onClick={() => checkout(bookingId)}>Check out</Button>}
+          <Button variation="secondary" onClick={moveBack}>
+            Back
+          </Button>
+          <Modal.Open opens="delete">
+            <Button icon={<HiTrash />}>Delete Booking</Button>
+          </Modal.Open>
+        </ButtonGroup>
+        <Modal.Window name="delete">
+          <ConfirmDelete resourceName="booking" disabled={isDeleting} onConfirm={() => deleteBooking(bookingId, {
+            onSettled: () => {
+              // onSettled -> mutate no matter it is success or error
+              navigate(-1)
+            }
+          })} />
+        </Modal.Window>
+      </Modal>
     </>
   );
 }

@@ -29,7 +29,6 @@ function CheckinBooking() {
   const [addBreakfast, setAddBreakfast] = useState(false)
   const { booking, isLoading } = useBooking()
   const { settings, isLoading: isLoadingSettings } = useSettings()
-  console.log("settings", settings)
 
   useEffect(() => {
     () => setConfirmPaid(booking?.isPaid ?? false)
@@ -38,7 +37,7 @@ function CheckinBooking() {
   const moveBack = useMoveBack();
   const { checkin, isCheckingIn } = useCheckin()
 
-  if (isLoading) return <Spinner />;
+  if (isLoading || isLoadingSettings) return <Spinner />;
 
   const {
     id: bookingId,
@@ -53,7 +52,17 @@ function CheckinBooking() {
 
   function handleCheckin() {
     if (!confirmPaid) return
-    checkin(bookingId)
+    if (addBreakfast) {
+      checkin({
+        bookingId, breakfast: {
+          hasBreakfast: true,
+          extrasPrice: optionalBfPrice,
+          totalPrice: totalPrice + optionalBfPrice
+        }
+      })
+    } else {
+      checkin({ bookingId, breakfast: {} })
+    }
   }
 
   return (
